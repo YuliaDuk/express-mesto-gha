@@ -1,16 +1,17 @@
 const Card = require('../models/card');
 
-const ERROR_VALIDATION = 400;
-
-const ERROR_NOT_FOUND = 404;
-
-const ERROR_SERVER = 500;
+const {
+  ERROR_VALIDATION,
+  ERROR_NOT_FOUND,
+  ERROR_SERVER,
+  STATUS_OK,
+} = require('../utils/utils');
 
 const createCard = (req, res) => {
   const { name, link } = req.body;
   Card
     .create({ name, link, owner: req.user._id })
-    .then((card) => res.send({ data: card }))
+    .then((card) => res.status(STATUS_OK).send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(ERROR_VALIDATION).send({ message: 'Validation Error' });

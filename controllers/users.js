@@ -1,10 +1,11 @@
 const User = require('../models/user');
 
-const ERROR_VALIDATION = 400;
-
-const ERROR_NOT_FOUND = 404;
-
-const ERROR_SERVER = 500;
+const {
+  ERROR_VALIDATION,
+  ERROR_NOT_FOUND,
+  ERROR_SERVER,
+  STATUS_OK,
+} = require('../utils/utils');
 
 const getUsers = (req, res) => {
   User
@@ -37,7 +38,7 @@ const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
   User
     .create({ name, about, avatar })
-    .then((user) => res.send({ data: user }))
+    .then((user) => res.status(STATUS_OK).send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(ERROR_VALIDATION).send({ message: 'Validation Error' });
