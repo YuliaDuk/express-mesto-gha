@@ -8,6 +8,8 @@ const routes = require('./routes/index');
 
 const { PORT = 3000 } = process.env;
 
+const ERROR_NOT_FOUND = 404;
+
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb')
   .then(() => {
     console.log('connected to db');
@@ -26,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 app.use(routes);
+app.use('*', (req, res) => res.status(ERROR_NOT_FOUND).send({ message: 'Page not found' }));
 
 app.listen(PORT, () => {
   console.log(`server is running on port ${PORT}`);
