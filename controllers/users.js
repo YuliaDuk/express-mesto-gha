@@ -54,6 +54,7 @@ const createUser = (req, res, next) => {
         return next(new ValidationError('Заполните обязательные поля'));
       }
       if (err.code === 11000) {
+        console.log(err.code === 11000);
         return next(new DuplicateError('Пользователь с такой почтой уже существует'));
       }
       return next(err);
