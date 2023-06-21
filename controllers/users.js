@@ -1,54 +1,61 @@
+const bcrypt = require('bcryptjs');
+
+const jwt = require('jsonwebtoken');
+
 const User = require('../models/user');
 
-const {
-  ERROR_VALIDATION,
-  ERROR_NOT_FOUND,
-  ERROR_SERVER,
-  STATUS_OK,
-} = require('../utils/utils');
+const STATUS_OK = 201;
 
-const getUsers = (req, res) => {
+const NotFoundError = require('../errors/NotFoundError');
+const ValidationError = require('../errors/ValidationError');
+const DuplicateError = require('../errors/DuplicateError');
+
+const getUsers = (req, res, next) => {
   User
     .find({})
     .then((user) => res.send({ data: user }))
-    .catch(() => res.status(ERROR_SERVER).send({ message: 'Server Error' }));
+    .catch(next);
 };
 
-const getUserById = (req, res) => {
+const getUserById = (req, res, next) => {
   const { userId } = req.params;
   User
     .findById(userId)
     .then((user) => {
       if (!user) {
-        res.status(ERROR_NOT_FOUND).send({ message: 'User not found' });
-        return;
+        throw new NotFoundError('Пользователь не найден');
       }
       res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(ERROR_VALIDATION).send({ message: 'Validation Error' });
-        return;
+        return next(new ValidationError('Некорректный id'));
       }
-      res.status(ERROR_SERVER).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 
-const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  User
-    .create({ name, about, avatar })
+const createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
     .then((user) => res.status(STATUS_OK).send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(ERROR_VALIDATION).send({ message: 'Validation Error' });
-        return;
+        return next(new ValidationError('Заполните обязательные поля'));
       }
-      res.status(ERROR_SERVER).send({ message: 'Server Error' });
+      if (err.code === 11000) {
+        return next(new DuplicateError('Пользователь с такой почтой уже существует'));
+      }
+      return next(err);
     });
 };
 
-const updateUser = (req, res) => {
+const updateUser = (req, res, next) => {
   const { name, about } = req.body;
   User
     .findByIdAndUpdate(
@@ -62,20 +69,19 @@ const updateUser = (req, res) => {
     )
     .then((user) => {
       if (!user) {
-        res.status(ERROR_NOT_FOUND).send({ message: 'User not found' });
-        return;
+        throw new NotFoundError('Пользователь не найден');
       }
       res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(ERROR_VALIDATION).send({ message: 'Validation Error' });
+        return next(new ValidationError('Некорректный id'));
       }
-      return res.status(ERROR_SERVER).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 
-const updateAvatar = (req, res) => {
+const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User
     .findByIdAndUpdate(
@@ -89,23 +95,48 @@ const updateAvatar = (req, res) => {
     )
     .then((user) => {
       if (!user) {
-        res.status(ERROR_NOT_FOUND).send({ message: 'User not found' });
-        return;
+        throw new NotFoundError('Пользователь не найден');
       }
       res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(ERROR_VALIDATION).send({ message: 'Validation Error' });
+        return next(new ValidationError('Некорректный id'));
       }
-      return res.status(ERROR_SERVER).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 
+const login = (req, res, next) => {
+  const { email, password } = req.body;
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      }
+      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      res.send({ token });
+    })
+    .catch(next);
+};
+
+const getMyInfo = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      }
+      res.send({ data: user });
+    })
+    .catch(next);
+};
+
 module.exports = {
+  getMyInfo,
   getUsers,
   getUserById,
   createUser,
   updateUser,
   updateAvatar,
+  login,
 };
