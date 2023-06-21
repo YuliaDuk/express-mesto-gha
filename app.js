@@ -6,6 +6,9 @@ const bodyParser = require('body-parser');
 
 const mongoose = require('mongoose');
 
+const { celebrate, Joi } = require('celebrate');
+const { errors } = require('celebrate');
+
 const routes = require('./routes/index');
 
 const { createUser, login } = require('./controllers/users');
@@ -25,12 +28,27 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post('/signup', createUser);
-app.post('/signin', login);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    // eslint-disable-next-line no-useless-escape
+    avatar: Joi.string().pattern(/^https?:\/\/[\w\-\.\/~:\?\#\[\]@!$&'\(\)\*\+,;=]+#?$/),
+    email: Joi.string().required(),
+    password: Joi.string().required().min(8),
+  }),
+}), createUser);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string(),
+    about: Joi.string().min(8),
+  }),
+}), login);
 app.use(auth);
 app.use(routes);
 
-app.use((err, req, res, next) => {
+app.use(errors());
+app.use((err, req, res) => {
   const { statusCode = 500, message } = err;
 
   res

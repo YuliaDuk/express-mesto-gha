@@ -43,8 +43,13 @@ const createUser = (req, res, next) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then((user) => res.status(STATUS_OK).send({ data: user }))
+    .then((user) => {
+      const newUser = user.toObject();
+      delete newUser.password;
+      res.status(STATUS_OK).send({ data: newUser });
+    })
     .catch((err) => {
+      console.log(err);
       if (err.name === 'ValidationError') {
         return next(new ValidationError('Заполните обязательные поля'));
       }
