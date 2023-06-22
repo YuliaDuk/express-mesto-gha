@@ -1,6 +1,6 @@
 const Card = require('../models/card');
 
-const STATUS_OK = 201;
+const STATUS_OK = 200;
 
 const ValidationError = require('../errors/ValidationError');
 const NotFoundError = require('../errors/NotFoundError');
