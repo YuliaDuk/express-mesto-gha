@@ -47,45 +47,55 @@ const deleteCardById = (req, res, next) => {
 };
 
 const likeCard = (req, res, next) => {
-  Card
-    .findByIdAndUpdate(
-      req.params.cardId,
-      { $addToSet: { likes: req.user._id } },
-      { new: true },
-    )
+  const { cardId } = req.params.cardId;
+  Card.findById(cardId)
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Такой карточки не существует');
+        throw new NotFoundError('Такой карточки не существует!');
       }
-      res.send({ data: card });
+      return Card
+        .findByIdAndUpdate(
+          cardId,
+          { $addToSet: { likes: req.user._id } },
+          { new: true },
+        )
+        .then((newcard) => {
+          res.status(STATUS_OK).send({ data: newcard });
+        })
+        .catch((err) => {
+          if (err.name === 'CastError') {
+            return next(new ValidationError('Некорректный id'));
+          }
+          return next(err);
+        });
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new ValidationError('Некорректный id'));
-      }
-      return next(err);
-    });
+    .catch(next);
 };
 
 const dislikeCard = (req, res, next) => {
-  Card
-    .findByIdAndUpdate(
-      req.params.cardId,
-      { $pull: { likes: req.user._id } },
-      { new: true },
-    )
+  const { cardId } = req.params.cardId;
+  Card.findById(cardId)
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Такой карточки не существует');
+        throw new NotFoundError('Такой карточки не существует!');
       }
-      res.send({ data: card });
+      return Card
+        .findByIdAndUpdate(
+          cardId,
+          { $pull: { likes: req.user._id } },
+          { new: true },
+        )
+        .then((newcard) => {
+          res.status(STATUS_OK).send({ data: newcard });
+        })
+        .catch((err) => {
+          if (err.name === 'CastError') {
+            return next(new ValidationError('Некорректный id'));
+          }
+          return next(err);
+        });
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new ValidationError('Некорректный id'));
-      }
-      return next(err);
-    });
+    .catch(next);
 };
 
 module.exports = {

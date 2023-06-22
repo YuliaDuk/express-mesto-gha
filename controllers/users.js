@@ -9,6 +9,7 @@ const STATUS_OK = 201;
 const NotFoundError = require('../errors/NotFoundError');
 const ValidationError = require('../errors/ValidationError');
 const DuplicateError = require('../errors/DuplicateError');
+const AuthorizationError = require('../errors/AuthorizationError');
 
 const getUsers = (req, res, next) => {
   User
@@ -113,13 +114,20 @@ const updateAvatar = (req, res, next) => {
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
-  return User.findUserByCredentials(email, password)
+  User.findOne({ email })
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Пользователь не найден');
+        throw new AuthorizationError('Введены неправильный email или password');
       }
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
-      res.send({ token });
+      return User.findUserByCredentials(email, password)
+        .then((userfound) => {
+          if (!userfound) {
+            throw new NotFoundError('Пользователь не найден');
+          }
+          const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+          res.send({ token });
+        })
+        .catch(next);
     })
     .catch(next);
 };
