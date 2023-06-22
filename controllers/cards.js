@@ -47,15 +47,14 @@ const deleteCardById = (req, res, next) => {
 };
 
 const likeCard = (req, res, next) => {
-  const { cardId } = req.params.cardId;
-  Card.findById(cardId)
+  Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) {
         throw new NotFoundError('Такой карточки не существует!');
       }
-      return Card
+      Card
         .findByIdAndUpdate(
-          cardId,
+          req.params.cardId,
           { $addToSet: { likes: req.user._id } },
           { new: true },
         )
@@ -73,15 +72,14 @@ const likeCard = (req, res, next) => {
 };
 
 const dislikeCard = (req, res, next) => {
-  const { cardId } = req.params.cardId;
-  Card.findById(cardId)
+  Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) {
         throw new NotFoundError('Такой карточки не существует!');
       }
       return Card
         .findByIdAndUpdate(
-          cardId,
+          req.params.cardId,
           { $pull: { likes: req.user._id } },
           { new: true },
         )
