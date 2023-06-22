@@ -26,24 +26,22 @@ const getCards = (req, res, next) => {
 };
 
 const deleteCardById = (req, res, next) => {
-  const { cardId } = req.params;
-  Card.findById(cardId)
+  Card.findById(req.params.cardId)
     .then((card) => {
-      if (!card) {
+      if (!card || card.owner.toString() !== req.user._id) {
         throw new NotFoundError('Такой карточки не существует');
       }
-      if (card.owner.toString() === req.user._id) {
-        Card.findByIdAndRemove(cardId)
-          .then((user) => res.send({ data: user }))
-          .catch(next);
-      }
+      Card
+        .findByIdAndRemove(req.params.cardId)
+        .then((user) => res.status(STATUS_OK).send({ data: user }))
+        .catch((err) => {
+          if (err.name === 'CastError') {
+            return next(new ValidationError('Некорректный id'));
+          }
+          return next(err);
+        });
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new ValidationError('Некорректный id'));
-      }
-      return next(err);
-    });
+    .catch(next);
 };
 
 const likeCard = (req, res, next) => {
