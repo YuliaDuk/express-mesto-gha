@@ -49,12 +49,10 @@ const createUser = (req, res, next) => {
       res.status(STATUS_OK).send({ data: newUser });
     })
     .catch((err) => {
-      console.log(err);
       if (err.name === 'ValidationError') {
         return next(new ValidationError('Заполните обязательные поля'));
       }
       if (err.code === 11000) {
-        console.log(err.code === 11000);
         return next(new DuplicateError('Пользователь с такой почтой уже существует'));
       }
       return next(err);
