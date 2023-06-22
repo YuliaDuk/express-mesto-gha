@@ -4,6 +4,7 @@ const STATUS_OK = 200;
 
 const ValidationError = require('../errors/ValidationError');
 const NotFoundError = require('../errors/NotFoundError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 const createCard = (req, res, next) => {
   const { name, link } = req.body;
@@ -28,8 +29,11 @@ const getCards = (req, res, next) => {
 const deleteCardById = (req, res, next) => {
   Card.findById(req.params.cardId)
     .then((card) => {
-      if (!card || card.owner.toString() !== req.user._id) {
+      if (!card) {
         throw new NotFoundError('Такой карточки не существует');
+      }
+      if (card.owner.toString() !== req.user._id) {
+        throw new ForbiddenError('У вас нет прав на удаление этой карточки');
       }
       Card
         .findByIdAndRemove(req.params.cardId)
